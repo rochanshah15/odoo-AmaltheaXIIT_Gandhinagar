@@ -5,6 +5,8 @@ import {
   Settings,
   CheckCircle,
   ClipboardList,
+  Shield,
+  LogOut,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import {
@@ -31,25 +33,20 @@ interface MenuItem {
 
 const adminItems: MenuItem[] = [
   { title: 'Dashboard', url: '/dashboard/admin', icon: LayoutDashboard },
-  { title: 'User Management', url: '/dashboard/admin/users', icon: Users },
-  { title: 'All Expenses', url: '/dashboard/admin/expenses', icon: FileText },
-  { title: 'Settings', url: '/dashboard/admin/settings', icon: Settings },
+  { title: 'Approval Rules', url: '/dashboard/admin/approval-rules', icon: Shield },
 ];
 
 const managerItems: MenuItem[] = [
   { title: 'Dashboard', url: '/dashboard/manager', icon: LayoutDashboard },
-  { title: 'Approvals', url: '/dashboard/manager/approvals', icon: CheckCircle, badge: 5 },
-  { title: 'My Expenses', url: '/dashboard/manager/expenses', icon: FileText },
 ];
 
 const employeeItems: MenuItem[] = [
   { title: 'Dashboard', url: '/dashboard/employee', icon: LayoutDashboard },
-  { title: 'My Expenses', url: '/dashboard/employee/expenses', icon: ClipboardList },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const items =
     user?.role === 'admin'
@@ -58,10 +55,14 @@ export function AppSidebar() {
       ? managerItems
       : employeeItems;
 
+  const handleLogout = () => {
+    logout();
+  };
+
   return (
     <Sidebar className={state === 'collapsed' ? 'w-14' : 'w-60'}>
-      <SidebarContent>
-        <SidebarGroup>
+      <SidebarContent className="flex flex-col h-full">
+        <SidebarGroup className="flex-1">
           <SidebarGroupLabel className={state === 'collapsed' ? 'sr-only' : ''}>
             Navigation
           </SidebarGroupLabel>
@@ -93,6 +94,25 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        {/* Logout Section */}
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={handleLogout}
+                  className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <LogOut className="h-4 w-4" />
+                  {state !== 'collapsed' && (
+                    <span>Logout</span>
+                  )}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

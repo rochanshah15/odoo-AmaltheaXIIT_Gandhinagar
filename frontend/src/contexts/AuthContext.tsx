@@ -9,13 +9,14 @@ export interface User {
   role: UserRole;
   companyId: string;
   managerId?: string;
+  country?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  signup: (name: string, email: string, password: string) => Promise<void>;
+  signup: (name: string, email: string, password: string, country?: string) => Promise<void>;
   isAuthenticated: boolean;
   testLogin: (role: UserRole) => void;
 }
@@ -45,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('user', JSON.stringify(mockUser));
   };
 
-  const signup = async (name: string, email: string, password: string) => {
+  const signup = async (name: string, email: string, password: string, country?: string) => {
     // TODO: Replace with actual API call
     const mockUser: User = {
       id: Math.random().toString(36).substr(2, 9),
@@ -53,6 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       role: 'admin',
       companyId: 'company-' + Math.random().toString(36).substr(2, 9),
+      country,
     };
     setUser(mockUser);
     localStorage.setItem('user', JSON.stringify(mockUser));
