@@ -43,6 +43,16 @@ class Expense(models.Model):
         help_text="Employee who submitted this expense"
     )
     
+    # Company relationship
+    company = models.ForeignKey(
+        'admin_panel.Company',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='expenses',
+        help_text="Company this expense belongs to"
+    )
+    
     amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,

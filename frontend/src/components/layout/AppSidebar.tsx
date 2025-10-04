@@ -33,7 +33,10 @@ interface MenuItem {
 
 const adminItems: MenuItem[] = [
   { title: 'Dashboard', url: '/dashboard/admin', icon: LayoutDashboard },
+  { title: 'User Management', url: '/dashboard/admin/users', icon: Users },
   { title: 'Approval Rules', url: '/dashboard/admin/approval-rules', icon: Shield },
+  { title: 'Expense Management', url: '/dashboard/admin/expenses', icon: FileText },
+  { title: 'Settings', url: '/dashboard/admin/settings', icon: Settings },
 ];
 
 const managerItems: MenuItem[] = [
@@ -49,9 +52,9 @@ export function AppSidebar() {
   const { user, logout } = useAuth();
 
   const items =
-    user?.role === 'admin'
+    user?.role === 'ADMIN'
       ? adminItems
-      : user?.role === 'manager'
+      : user?.role === 'MANAGER'
       ? managerItems
       : employeeItems;
 

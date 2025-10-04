@@ -14,6 +14,20 @@ class IsAdmin(BasePermission):
         )
 
 
+class IsAdminUser(BasePermission):
+    """
+    Custom permission specifically for admin functionality.
+    This is an alias for IsAdmin to match the requirements.
+    """
+    
+    def has_permission(self, request, view):
+        return (
+            request.user and
+            request.user.is_authenticated and
+            request.user.role == 'ADMIN'
+        )
+
+
 class IsManager(BasePermission):
     """
     Custom permission to only allow manager users to access the view.
@@ -109,21 +123,52 @@ class IsSameCompany(BasePermission):
         return (
             request.user and
             request.user.is_authenticated and
-            hasattr(request.user, 'company_id') and
-            request.user.company_id
+            (hasattr(request.user, 'company') and request.user.company) or
+            (hasattr(request.user, 'company_id') and request.user.company_id)
         )
     
     def has_object_permission(self, request, view, obj):
+        # Check if object has company relationship
+        if hasattr(obj, 'company'):
+            return obj.company == request.user.company
+        
         # Check if object has company_id attribute
         if hasattr(obj, 'company_id'):
             return obj.company_id == request.user.company_id
         
-        # Check if object is a user and compare company_id
-        if hasattr(obj, 'user') and hasattr(obj.user, 'company_id'):
-            return obj.user.company_id == request.user.company_id
+        # Check if object is a user and compare company
+        if hasattr(obj, 'user') and hasattr(obj.user, 'company'):
+            return obj.user.company == request.user.company
         
         # For user objects
-        if hasattr(obj, 'company_id'):
-            return obj.company_id == request.user.company_id
+        if hasattr(obj, 'company'):
+            return obj.company == request.user.company
         
         return True
+
+
+class IsOwnerOrAdmin(BasePermission):
+    """
+    Custom permission to allow admin users or object owners to access the view.
+    """
+    
+    def has_permission(self, request, view):
+        return (
+            request.user and
+            request.user.is_authenticated
+        )
+    
+    def has_object_permission(self, request, view, obj):
+        # Admin can access anything
+        if request.user.role == 'ADMIN':
+            return True
+        
+        # Check if user owns the object
+        if hasattr(obj, 'employee'):
+            return obj.employee == request.user
+        elif hasattr(obj, 'user'):
+            return obj.user == request.user
+        elif hasattr(obj, 'owner'):
+            return obj.owner == request.user
+        
+        return False

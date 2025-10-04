@@ -25,12 +25,14 @@ class User(AbstractUser):
         help_text="Country of the user/company"
     )
     
-    # Company context - users belong to a company
-    company_id = models.CharField(
-        max_length=50,
+    # Company relationship - FK to Company model
+    company = models.ForeignKey(
+        'admin_panel.Company',
+        on_delete=models.CASCADE,
         blank=True,
         null=True,
-        help_text="Company identifier for multi-tenant support"
+        related_name='users',
+        help_text="Company this user belongs to"
     )
     
     # Manager relationship for employee hierarchy
@@ -43,14 +45,34 @@ class User(AbstractUser):
         help_text="Manager of this user (for employees)"
     )
     
+    # User status
+    is_active_user = models.BooleanField(
+        default=True,
+        help_text="Whether this user account is active"
+    )
+    
+    # Timestamps
+    last_login_date = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="Last login timestamp"
+    )
+    
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
     
+    def get_full_name_display(self):
+        """Return user's full name or username if names are not set"""
+        full_name = f"{self.first_name} {self.last_name}".strip()
+        return full_name if full_name else self.username
+    
+    def get_company_identifier(self):
+        """Return company identifier for backward compatibility"""
+        if self.company:
+            return f"company-{self.company.id}"
+        return None
+    
     def save(self, *args, **kwargs):
-        # Auto-generate company_id for the first admin user
-        if not self.company_id and self.role == self.Role.ADMIN:
-            import uuid
-            self.company_id = f"company-{uuid.uuid4().hex[:8]}"
         super().save(*args, **kwargs)
     
     class Meta:
