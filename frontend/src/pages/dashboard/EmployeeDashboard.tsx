@@ -14,16 +14,72 @@ import { toast } from 'sonner';
 
 interface Expense {
   id: string;
+  empName: string;
+  description: string;
   date: string;
   category: string;
+  paidBy: string;
+  remarks: string;
   amount: string;
   status: 'pending' | 'approved' | 'rejected';
 }
 
 const mockExpenses: Expense[] = [
-  { id: '1', date: '2025-09-28', category: 'Travel', amount: '$320.00', status: 'approved' },
-  { id: '2', date: '2025-09-25', category: 'Meals', amount: '$75.50', status: 'pending' },
-  { id: '3', date: '2025-09-20', category: 'Office Supplies', amount: '$45.99', status: 'rejected' },
+  { 
+    id: '1', 
+    empName: 'John Smith', 
+    description: 'Client meeting travel expenses', 
+    date: '2025-09-28', 
+    category: 'Travel', 
+    paidBy: 'Company Card', 
+    remarks: 'Approved by manager', 
+    amount: '$320.00', 
+    status: 'approved' 
+  },
+  { 
+    id: '2', 
+    empName: 'Sarah Johnson', 
+    description: 'Team lunch meeting', 
+    date: '2025-09-25', 
+    category: 'Meals', 
+    paidBy: 'Personal Card', 
+    remarks: 'Pending review', 
+    amount: '$75.50', 
+    status: 'pending' 
+  },
+  { 
+    id: '3', 
+    empName: 'Mike Wilson', 
+    description: 'Office stationery purchase', 
+    date: '2025-09-20', 
+    category: 'Office Supplies', 
+    paidBy: 'Cash', 
+    remarks: 'Receipt not provided', 
+    amount: '$45.99', 
+    status: 'rejected' 
+  },
+  { 
+    id: '4', 
+    empName: 'Lisa Brown', 
+    description: 'Software subscription', 
+    date: '2025-09-18', 
+    category: 'Equipment', 
+    paidBy: 'Company Card', 
+    remarks: '—', 
+    amount: '$120.00', 
+    status: 'pending' 
+  },
+  { 
+    id: '5', 
+    empName: 'David Lee', 
+    description: 'Conference registration', 
+    date: '2025-09-15', 
+    category: 'Travel', 
+    paidBy: 'Personal Card', 
+    remarks: '—', 
+    amount: '$250.00', 
+    status: 'approved' 
+  },
 ];
 
 const EmployeeDashboard = () => {
@@ -134,6 +190,22 @@ const EmployeeDashboard = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="paidBy">Paid By</Label>
+                  <Input
+                    id="paidBy"
+                    placeholder="Enter name of person who paid"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="remarks">Remarks</Label>
+                  <Textarea
+                    id="remarks"
+                    placeholder="Add any additional comments or notes..."
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="receipt">Receipt</Label>
                   <div className="flex items-center gap-2">
                     <Input id="receipt" type="file" accept="image/*,.pdf" />
@@ -164,36 +236,50 @@ const EmployeeDashboard = () => {
             <CardTitle>Expense History</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockExpenses.map((expense) => (
-                  <TableRow key={expense.id}>
-                    <TableCell>{expense.date}</TableCell>
-                    <TableCell>{expense.category}</TableCell>
-                    <TableCell className="font-medium">{expense.amount}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusVariant(expense.status)} className={getStatusColor(expense.status)}>
-                        {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm">
-                        View
-                      </Button>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[120px]">Name</TableHead>
+                    <TableHead className="min-w-[200px]">Description</TableHead>
+                    <TableHead className="min-w-[100px]">Date</TableHead>
+                    <TableHead className="min-w-[120px]">Category</TableHead>
+                    <TableHead className="min-w-[100px]">Paid By</TableHead>
+                    <TableHead className="min-w-[150px]">Remarks</TableHead>
+                    <TableHead className="min-w-[100px] text-right">Amount</TableHead>
+                    <TableHead className="min-w-[100px]">Status</TableHead>
+                    <TableHead className="w-20">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {mockExpenses.map((expense) => (
+                    <TableRow key={expense.id}>
+                      <TableCell className="font-medium">{expense.empName}</TableCell>
+                      <TableCell className="max-w-[200px] truncate" title={expense.description}>
+                        {expense.description}
+                      </TableCell>
+                      <TableCell>{expense.date}</TableCell>
+                      <TableCell>{expense.category}</TableCell>
+                      <TableCell>{expense.paidBy}</TableCell>
+                      <TableCell className="max-w-[150px] truncate" title={expense.remarks}>
+                        {expense.remarks}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">{expense.amount}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusVariant(expense.status)} className={getStatusColor(expense.status)}>
+                          {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </motion.div>

@@ -11,6 +11,8 @@ import Signup from "./pages/Signup";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import ManagerDashboard from "./pages/dashboard/ManagerDashboard";
 import EmployeeDashboard from "./pages/dashboard/EmployeeDashboard";
+import ApprovalRules from "./pages/dashboard/ApprovalRules";
+import UserManagement from "./pages/dashboard/UserManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +37,16 @@ const App = () => (
               <Route path="admin" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="admin/users" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <UserManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="admin/approval-rules" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <ApprovalRules />
                 </ProtectedRoute>
               } />
               <Route path="manager" element={

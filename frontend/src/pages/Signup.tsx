@@ -1,21 +1,59 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+
+interface Country {
+  name: {
+    common: string;
+    official: string;
+  };
+  currencies: Record<string, {
+    name: string;
+    symbol: string;
+  }>;
+}
 
 const Signup = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [country, setCountry] = useState('');
+  const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(false);
+  const [countriesLoading, setCountriesLoading] = useState(true);
   const { signup } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const response = await fetch('https://restcountries.com/v3.1/all?fields=name,currencies');
+        const data = await response.json();
+        
+        // Sort countries alphabetically by common name
+        const sortedCountries = data.sort((a: Country, b: Country) => 
+          a.name.common.localeCompare(b.name.common)
+        );
+        
+        setCountries(sortedCountries);
+      } catch (error) {
+        console.error('Error fetching countries:', error);
+        toast.error('Failed to load countries. Please refresh the page.');
+      } finally {
+        setCountriesLoading(false);
+      }
+    };
+
+    fetchCountries();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,10 +68,15 @@ const Signup = () => {
       return;
     }
 
+    if (!country) {
+      toast.error('Please select your country');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await signup(name, email, password);
+      await signup(name, email, password, country);
       toast.success('Account created successfully! You are now an Admin.');
       navigate('/dashboard/admin');
     } catch (error) {
@@ -85,6 +128,21 @@ const Signup = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="country">Country</Label>
+                <Select value={country} onValueChange={setCountry} required disabled={countriesLoading}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={countriesLoading ? "Loading countries..." : "Select your country"} />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px]">
+                    {countries.map((countryData) => (
+                      <SelectItem key={countryData.name.common} value={countryData.name.common}>
+                        {countryData.name.common}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>

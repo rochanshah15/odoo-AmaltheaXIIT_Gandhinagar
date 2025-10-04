@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, DollarSign, Clock, CheckCircle, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,46 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
+interface Country {
+  name: {
+    common: string;
+    official: string;
+  };
+  currencies: Record<string, {
+    name: string;
+    symbol: string;
+  }>;
+}
+
 const AdminDashboard = () => {
   const [openAddUser, setOpenAddUser] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string>('');
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [countriesLoading, setCountriesLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const response = await fetch('https://restcountries.com/v3.1/all?fields=name,currencies');
+        const data = await response.json();
+        
+        // Sort countries alphabetically by common name
+        const sortedCountries = data.sort((a: Country, b: Country) => 
+          a.name.common.localeCompare(b.name.common)
+        );
+        
+        setCountries(sortedCountries);
+      } catch (error) {
+        console.error('Error fetching countries:', error);
+        toast.error('Failed to load countries. Please refresh the page.');
+      } finally {
+        setCountriesLoading(false);
+      }
+    };
+
+    fetchCountries();
+  }, []);
 
   const stats = [
     { title: 'Total Expenses', value: '$45,231', icon: DollarSign, color: 'text-primary' },
@@ -22,8 +59,16 @@ const AdminDashboard = () => {
 
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!selectedCountry) {
+      toast.error('Please select a country');
+      return;
+    }
+    
     toast.success('User added successfully!');
     setOpenAddUser(false);
+    setSelectedCountry('');
+    setSelectedRole('');
   };
 
   return (
@@ -60,6 +105,21 @@ const AdminDashboard = () => {
                 <div className="space-y-2">
                   <Label htmlFor="userEmail">Email</Label>
                   <Input id="userEmail" type="email" placeholder="john@company.com" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="userCountry">Country</Label>
+                  <Select value={selectedCountry} onValueChange={setSelectedCountry} required disabled={countriesLoading}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={countriesLoading ? "Loading countries..." : "Select country"} />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[200px]">
+                      {countries.map((country) => (
+                        <SelectItem key={country.name.common} value={country.name.common}>
+                          {country.name.common}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="userPassword">Password</Label>

@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 interface Expense {
   id: string;
   employeeName: string;
+  approvalSubject: string;
   date: string;
   amount: string;
   category: string;
@@ -25,6 +26,7 @@ const mockExpenses: Expense[] = [
   {
     id: '1',
     employeeName: 'Alice Williams',
+    approvalSubject: 'Conference Travel Expenses',
     date: '2025-10-01',
     amount: '$450.00',
     category: 'Travel',
@@ -34,6 +36,7 @@ const mockExpenses: Expense[] = [
   {
     id: '2',
     employeeName: 'Bob Smith',
+    approvalSubject: 'Client Entertainment',
     date: '2025-10-02',
     amount: '$120.50',
     category: 'Meals',
@@ -43,6 +46,7 @@ const mockExpenses: Expense[] = [
   {
     id: '3',
     employeeName: 'Carol Johnson',
+    approvalSubject: 'Equipment Purchase',
     date: '2025-10-03',
     amount: '$89.99',
     category: 'Office Supplies',
@@ -77,6 +81,14 @@ const ManagerDashboard = () => {
     setComment('');
   };
 
+  const handleQuickApprove = (expenseId: string) => {
+    toast.success('Expense approved successfully!');
+  };
+
+  const handleQuickReject = (expenseId: string) => {
+    toast.error('Expense rejected');
+  };
+
   return (
     <div className="space-y-6">
       <motion.div
@@ -100,42 +112,67 @@ const ManagerDashboard = () => {
             <CardTitle>Pending Approvals</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockExpenses.map((expense) => (
-                  <TableRow key={expense.id} className="cursor-pointer hover:bg-muted/50">
-                    <TableCell className="font-medium">{expense.employeeName}</TableCell>
-                    <TableCell>{expense.date}</TableCell>
-                    <TableCell>{expense.category}</TableCell>
-                    <TableCell>{expense.amount}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-pending/10 text-pending">
-                        Pending
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedExpense(expense)}
-                      >
-                        Review
-                      </Button>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[120px]">Employee</TableHead>
+                    <TableHead className="min-w-[180px]">Approval Subject</TableHead>
+                    <TableHead className="min-w-[100px]">Date</TableHead>
+                    <TableHead className="min-w-[120px]">Category</TableHead>
+                    <TableHead className="min-w-[100px] text-right">Amount</TableHead>
+                    <TableHead className="min-w-[100px]">Status</TableHead>
+                    <TableHead className="min-w-[200px]">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {mockExpenses.map((expense) => (
+                    <TableRow key={expense.id} className="hover:bg-muted/50">
+                      <TableCell className="font-medium">{expense.employeeName}</TableCell>
+                      <TableCell className="max-w-[180px] truncate" title={expense.approvalSubject}>
+                        {expense.approvalSubject}
+                      </TableCell>
+                      <TableCell>{expense.date}</TableCell>
+                      <TableCell>{expense.category}</TableCell>
+                      <TableCell className="text-right font-medium">{expense.amount}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="bg-pending/10 text-pending">
+                          Pending
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleQuickApprove(expense.id)}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <CheckCircle className="mr-1 h-3 w-3" />
+                            Accept
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleQuickReject(expense.id)}
+                          >
+                            <XCircle className="mr-1 h-3 w-3" />
+                            Reject
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedExpense(expense)}
+                          >
+                            Review
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </motion.div>
