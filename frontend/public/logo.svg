@@ -1,0 +1,12 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="30" cy="30" r="25" fill="#3B82F6" stroke="#1E40AF" stroke-width="2"/>
+  
+  <!-- Dollar sign in center -->
+  <path d="M26 15 L26 19 M26 41 L26 45 M30 15 L30 19 M30 41 L30 45" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <path d="M20 22 C20 20, 22 18, 26 18 L30 18 C34 18, 36 20, 36 22 C36 24, 34 26, 30 26 L26 26 C22 26, 20 28, 20 30 C20 32, 22 34, 26 34 L30 34 C34 34, 36 32, 36 30" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  
+  <!-- Company name -->
+  <text x="65" y="25" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#1F2937">ExpenseTracker</text>
+  <text x="65" y="40" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Professional Expense Management</text>
+</svg>

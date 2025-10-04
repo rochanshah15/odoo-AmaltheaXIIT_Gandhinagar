@@ -1,73 +1,146 @@
-# Welcome to your Lovable project
+# ExpenseTracker - Professional Expense Management System
 
-## Project info
+A comprehensive expense management system built with React, TypeScript, and Django REST Framework. This application provides role-based access control for admins, managers, and employees to efficiently track and manage expenses.
 
-**URL**: https://lovable.dev/projects/5de5a4ef-c3bd-4635-8121-c8c5e619fa28
+## Features
 
-## How can I edit this code?
+- **Role-Based Access Control**: Different interfaces for Admin, Manager, and Employee roles
+- **Expense Submission**: Easy expense submission with receipt uploads
+- **Approval Workflow**: Multi-level approval process for expense requests
+- **Dashboard Analytics**: Comprehensive statistics and reporting
+- **Responsive Design**: Modern, mobile-friendly interface built with Tailwind CSS
+- **Real-time Updates**: Live notifications and status updates
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+### Frontend
+- **React 18** with TypeScript
+- **Vite** for fast development and building
+- **Tailwind CSS** for styling
+- **Shadcn/UI** for component library
+- **Framer Motion** for animations
+- **React Hook Form** for form management
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/5de5a4ef-c3bd-4635-8121-c8c5e619fa28) and start prompting.
+### Backend
+- **Django 5.2** with Django REST Framework
+- **JWT Authentication** for secure API access
+- **SQLite** database (easily upgradeable to PostgreSQL)
+- **Role-based permissions** and security
 
-Changes made via Lovable will be committed automatically to this repo.
+## Getting Started
 
-**Use your preferred IDE**
+### Prerequisites
+- Node.js 18+ and npm/yarn
+- Python 3.11+
+- Git
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd expense-tracker
+   ```
 
-Follow these steps:
+2. **Frontend Setup**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+3. **Backend Setup**
+   ```bash
+   cd backend/expense
+   pip install -r requirements.txt
+   python manage.py migrate
+   python manage.py runserver
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+4. **Create a superuser (optional)**
+   ```bash
+   python manage.py createsuperuser
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Development
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+- Frontend runs on `http://localhost:8080`
+- Backend API runs on `http://localhost:8000`
+- Admin panel available at `http://localhost:8000/admin`
+
+## Project Structure
+
+```
+expense-tracker/
+├── frontend/                 # React frontend application
+│   ├── src/
+│   │   ├── components/      # Reusable UI components
+│   │   ├── pages/          # Main application pages
+│   │   ├── lib/            # API utilities and helpers
+│   │   └── contexts/       # React context providers
+│   └── public/             # Static assets
+├── backend/                 # Django backend
+│   └── expense/            # Main Django project
+│       ├── authentication/ # User authentication app
+│       ├── employees/      # Employee expense management
+│       └── manager/        # Manager approval workflow
 ```
 
-**Edit a file directly in GitHub**
+## User Roles
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Admin
+- Complete system access
+- User management
+- System-wide expense overview
+- Configuration management
 
-**Use GitHub Codespaces**
+### Manager
+- Team expense approval
+- Dashboard with team statistics
+- Bulk approval operations
+- Team member management
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Employee
+- Expense submission
+- Personal expense tracking
+- Receipt uploads
+- Status monitoring
 
-## What technologies are used for this project?
+## API Documentation
 
-This project is built with:
+The backend provides a comprehensive REST API with the following main endpoints:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- `/api/auth/` - Authentication (login, register, token refresh)
+- `/api/expenses/` - Expense CRUD operations
+- `/api/manager/` - Manager-specific operations
+- `/api/categories/` - Expense categories
 
-## How can I deploy this project?
+## Building for Production
 
-Simply open [Lovable](https://lovable.dev/projects/5de5a4ef-c3bd-4635-8121-c8c5e619fa28) and click on Share -> Publish.
+### Frontend
+```bash
+cd frontend
+npm run build
+```
 
-## Can I connect a custom domain to my Lovable project?
+### Backend
+```bash
+cd backend/expense
+python manage.py collectstatic
+```
 
-Yes, you can!
+## Contributing
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For support, email support@expensetracker.com or create an issue in the repository.

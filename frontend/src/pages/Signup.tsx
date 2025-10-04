@@ -21,7 +21,9 @@ interface Country {
 }
 
 const Signup = () => {
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -55,6 +57,14 @@ const Signup = () => {
     fetchCountries();
   }, []);
 
+  // Auto-generate username from first and last name
+  useEffect(() => {
+    if (firstName && lastName) {
+      const generatedUsername = `${firstName.toLowerCase()}.${lastName.toLowerCase()}`.replace(/[^a-z0-9.]/g, '');
+      setUsername(generatedUsername);
+    }
+  }, [firstName, lastName]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -68,19 +78,23 @@ const Signup = () => {
       return;
     }
 
-    if (!country) {
-      toast.error('Please select your country');
+    if (!username.trim()) {
+      toast.error('Username is required');
       return;
     }
 
     setLoading(true);
 
     try {
-      await signup(name, email, password, country);
-      toast.success('Account created successfully! You are now an Admin.');
-      navigate('/dashboard/admin');
-    } catch (error) {
-      toast.error('Signup failed. Please try again.');
+      await signup(username, email, password, confirmPassword, firstName, lastName, country);
+      toast.success('Account created successfully! You are now an Admin. Please login to continue.');
+      // Navigate to login page after successful signup
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      toast.error(error.message || 'Signup failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -96,9 +110,7 @@ const Signup = () => {
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
             <div className="flex items-center justify-center mb-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-                <span className="text-xl font-bold text-primary-foreground">EM</span>
-              </div>
+              <img src="/logo.svg" alt="ExpenseTracker" className="h-16 w-auto" />
             </div>
             <CardTitle className="text-2xl text-center">Create an account</CardTitle>
             <CardDescription className="text-center">
@@ -107,14 +119,38 @@ const Signup = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    placeholder="John"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    placeholder="Doe"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="username">Username</Label>
                 <Input
-                  id="name"
+                  id="username"
                   type="text"
-                  placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  placeholder="john.doe"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
                 />
               </div>

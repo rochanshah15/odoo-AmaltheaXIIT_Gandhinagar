@@ -21,27 +21,31 @@ export const Navbar = ({ darkMode, toggleDarkMode }: NavbarProps) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      navigate('/login');
+    }
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
+  const getInitials = (firstName: string, lastName: string) => {
+    const first = firstName?.charAt(0) || '';
+    const last = lastName?.charAt(0) || '';
+    return (first + last).toUpperCase() || 'U';
+  };
+
+  const getFullName = (firstName: string, lastName: string) => {
+    return `${firstName || ''} ${lastName || ''}`.trim() || 'User';
   };
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="flex h-16 items-center justify-between px-6">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <span className="text-sm font-bold text-primary-foreground">EM</span>
-          </div>
-          <span className="text-lg font-semibold">ExpenseManager</span>
+        <div className="flex items-center gap-3">
+          <img src="/logo.svg" alt="ExpenseTracker" className="h-8 w-auto" />
         </div>
 
         <div className="flex items-center gap-3">
@@ -63,7 +67,7 @@ export const Navbar = ({ darkMode, toggleDarkMode }: NavbarProps) => {
               <Button variant="ghost" className="h-9 w-9 rounded-full p-0">
                 <Avatar className="h-9 w-9">
                   <AvatarFallback className="bg-primary text-primary-foreground">
-                    {user ? getInitials(user.name) : 'U'}
+                    {user ? getInitials(user.first_name, user.last_name) : 'U'}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -71,7 +75,9 @@ export const Navbar = ({ darkMode, toggleDarkMode }: NavbarProps) => {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user?.name}</p>
+                  <p className="text-sm font-medium leading-none">
+                    {user ? getFullName(user.first_name, user.last_name) : 'User'}
+                  </p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {user?.email}
                   </p>

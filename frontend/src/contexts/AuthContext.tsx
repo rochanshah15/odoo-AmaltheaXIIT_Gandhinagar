@@ -1,77 +1,151 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authAPI, removeTokens } from '@/lib/api';
 
-export type UserRole = 'admin' | 'manager' | 'employee';
+export type UserRole = 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
 
 export interface User {
-  id: string;
-  name: string;
+  id: number;
+  username: string;
   email: string;
+  first_name: string;
+  last_name: string;
   role: UserRole;
-  companyId: string;
-  managerId?: string;
+  company_id: string;
   country?: string;
+  manager?: number;
+  date_joined: string;
+  last_login?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  signup: (name: string, email: string, password: string, country?: string) => Promise<void>;
+  logout: () => Promise<void>;
+  signup: (
+    username: string,
+    email: string, 
+    password: string, 
+    confirmPassword: string,
+    firstName?: string,
+    lastName?: string,
+    country?: string
+  ) => Promise<void>;
   isAuthenticated: boolean;
-  testLogin: (role: UserRole) => void;
+  loading: boolean;
+  testLogin: (role: UserRole) => void; // Keep for testing purposes
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  // Initialize auth state from localStorage
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    const initializeAuth = async () => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        const accessToken = localStorage.getItem('access_token');
+        
+        if (storedUser && accessToken) {
+          const userData = JSON.parse(storedUser);
+          
+          // Verify token is still valid by testing authentication
+          try {
+            await authAPI.testAuth();
+            setUser(userData);
+          } catch (error) {
+            // Token is invalid, clear stored data
+            removeTokens();
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        removeTokens();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
-    // TODO: Replace with actual API call
-    const mockUser: User = {
-      id: '1',
-      name: 'John Doe',
-      email,
-      role: 'employee',
-      companyId: 'company-1',
-    };
-    setUser(mockUser);
-    localStorage.setItem('user', JSON.stringify(mockUser));
+    try {
+      setLoading(true);
+      const response = await authAPI.login(email, password);
+      setUser(response.user);
+      
+      // Navigate to appropriate dashboard based on role
+      const role = response.user.role.toLowerCase();
+      setTimeout(() => {
+        window.location.href = `/dashboard/${role}`;
+      }, 100);
+      
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const signup = async (name: string, email: string, password: string, country?: string) => {
-    // TODO: Replace with actual API call
-    const mockUser: User = {
-      id: Math.random().toString(36).substr(2, 9),
-      name,
-      email,
-      role: 'admin',
-      companyId: 'company-' + Math.random().toString(36).substr(2, 9),
-      country,
-    };
-    setUser(mockUser);
-    localStorage.setItem('user', JSON.stringify(mockUser));
+  const signup = async (
+    username: string,
+    email: string,
+    password: string,
+    confirmPassword: string,
+    firstName?: string,
+    lastName?: string,
+    country?: string
+  ) => {
+    try {
+      setLoading(true);
+      const response = await authAPI.register({
+        username,
+        email,
+        password,
+        confirm_password: confirmPassword,
+        first_name: firstName || '',
+        last_name: lastName || '',
+        country: country || '',
+      });
+      
+      // Don't set user automatically since we're not auto-logging in
+      // User will need to login after signup
+      
+      return response;
+      
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      await authAPI.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+    }
   };
 
+  // Keep test login for development/testing
   const testLogin = (role: UserRole) => {
     const mockUser: User = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: `Test ${role.charAt(0).toUpperCase() + role.slice(1)}`,
-      email: `${role}@test.com`,
+      id: Math.floor(Math.random() * 1000),
+      username: `test_${role.toLowerCase()}`,
+      email: `${role.toLowerCase()}@test.com`,
+      first_name: 'Test',
+      last_name: role.charAt(0).toUpperCase() + role.slice(1).toLowerCase(),
       role,
-      companyId: 'company-test',
+      company_id: 'test-company',
+      date_joined: new Date().toISOString(),
     };
     setUser(mockUser);
     localStorage.setItem('user', JSON.stringify(mockUser));
@@ -85,6 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         signup,
         isAuthenticated: !!user,
+        loading,
         testLogin,
       }}
     >

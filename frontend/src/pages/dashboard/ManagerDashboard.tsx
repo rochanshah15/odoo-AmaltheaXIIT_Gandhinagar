@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,84 +10,141 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { WorkflowStepper, WorkflowStep } from '@/components/WorkflowStepper';
 import { toast } from 'sonner';
-
-interface Expense {
-  id: string;
-  employeeName: string;
-  approvalSubject: string;
-  date: string;
-  amount: string;
-  category: string;
-  description: string;
-  status: 'pending' | 'approved' | 'rejected';
-}
-
-const mockExpenses: Expense[] = [
-  {
-    id: '1',
-    employeeName: 'Alice Williams',
-    approvalSubject: 'Conference Travel Expenses',
-    date: '2025-10-01',
-    amount: '$450.00',
-    category: 'Travel',
-    description: 'Flight to conference',
-    status: 'pending',
-  },
-  {
-    id: '2',
-    employeeName: 'Bob Smith',
-    approvalSubject: 'Client Entertainment',
-    date: '2025-10-02',
-    amount: '$120.50',
-    category: 'Meals',
-    description: 'Client dinner',
-    status: 'pending',
-  },
-  {
-    id: '3',
-    employeeName: 'Carol Johnson',
-    approvalSubject: 'Equipment Purchase',
-    date: '2025-10-03',
-    amount: '$89.99',
-    category: 'Office Supplies',
-    description: 'Laptop accessories',
-    status: 'pending',
-  },
-];
-
-const workflowSteps: WorkflowStep[] = [
-  { id: '1', name: 'Manager', status: 'current' },
-  { id: '2', name: 'Finance', status: 'pending' },
-  { id: '3', name: 'Final Approval', status: 'pending' },
-];
+import { managerAPI, ManagerExpense, ManagerExpenseDetail } from '@/lib/manager-api';
 
 const ManagerDashboard = () => {
-  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [selectedExpense, setSelectedExpense] = useState<ManagerExpenseDetail | null>(null);
   const [comment, setComment] = useState('');
+  const [pendingExpenses, setPendingExpenses] = useState<ManagerExpense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  const handleApprove = () => {
-    toast.success('Expense approved successfully!');
-    setSelectedExpense(null);
-    setComment('');
+  // Fetch pending expenses on component mount
+  useEffect(() => {
+    fetchPendingExpenses();
+  }, []);
+
+  const fetchPendingExpenses = async () => {
+    try {
+      setLoading(true);
+      const expenses = await managerAPI.getPendingExpenses();
+      setPendingExpenses(expenses);
+    } catch (error) {
+      console.error('Error fetching pending expenses:', error);
+      toast.error('Failed to load pending expenses');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleReject = () => {
+  const handleApprove = async () => {
+    if (!selectedExpense) return;
+    
+    try {
+      setActionLoading(true);
+      await managerAPI.approveExpense(selectedExpense.id, {
+        status: 'APPROVED',
+        approval_notes: comment
+      });
+      
+      toast.success('Expense approved successfully!');
+      setSelectedExpense(null);
+      setComment('');
+      fetchPendingExpenses(); // Refresh the list
+    } catch (error) {
+      console.error('Error approving expense:', error);
+      toast.error('Failed to approve expense');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!selectedExpense) return;
+    
     if (!comment.trim()) {
       toast.error('Please provide a reason for rejection');
       return;
     }
-    toast.success('Expense rejected');
-    setSelectedExpense(null);
-    setComment('');
+    
+    try {
+      setActionLoading(true);
+      await managerAPI.approveExpense(selectedExpense.id, {
+        status: 'REJECTED',
+        approval_notes: comment
+      });
+      
+      toast.success('Expense rejected');
+      setSelectedExpense(null);
+      setComment('');
+      fetchPendingExpenses(); // Refresh the list
+    } catch (error) {
+      console.error('Error rejecting expense:', error);
+      toast.error('Failed to reject expense');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleQuickApprove = (expenseId: string) => {
-    toast.success('Expense approved successfully!');
+  const handleQuickApprove = async (expenseId: number) => {
+    try {
+      await managerAPI.quickApprove(expenseId);
+      toast.success('Expense approved successfully!');
+      fetchPendingExpenses(); // Refresh the list
+    } catch (error) {
+      console.error('Error approving expense:', error);
+      toast.error('Failed to approve expense');
+    }
   };
 
-  const handleQuickReject = (expenseId: string) => {
-    toast.error('Expense rejected');
+  const handleQuickReject = async (expenseId: number) => {
+    try {
+      await managerAPI.quickReject(expenseId, 'Quick rejection by manager');
+      toast.success('Expense rejected');
+      fetchPendingExpenses(); // Refresh the list
+    } catch (error) {
+      console.error('Error rejecting expense:', error);
+      toast.error('Failed to reject expense');
+    }
   };
+
+  const handleReviewExpense = async (expense: ManagerExpense) => {
+    try {
+      const detailedExpense = await managerAPI.getExpenseDetail(expense.id);
+      setSelectedExpense(detailedExpense);
+      setComment(detailedExpense.approval_notes || '');
+    } catch (error) {
+      console.error('Error fetching expense details:', error);
+      toast.error('Failed to load expense details');
+    }
+  };
+
+  const formatCurrency = (amount: string, currency: string) => {
+    const currencySymbols: { [key: string]: string } = {
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'INR': '₹'
+    };
+    return `${currencySymbols[currency] || currency} ${amount}`;
+  };
+
+  const workflowSteps: WorkflowStep[] = [
+    { id: '1', name: 'Manager', status: 'current' },
+    { id: '2', name: 'Finance', status: 'pending' },
+    { id: '3', name: 'Final Approval', status: 'pending' },
+  ];
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Manager Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -109,70 +166,76 @@ const ManagerDashboard = () => {
       >
         <Card>
           <CardHeader>
-            <CardTitle>Pending Approvals</CardTitle>
+            <CardTitle>Pending Approvals ({pendingExpenses.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[120px]">Employee</TableHead>
-                    <TableHead className="min-w-[180px]">Approval Subject</TableHead>
-                    <TableHead className="min-w-[100px]">Date</TableHead>
-                    <TableHead className="min-w-[120px]">Category</TableHead>
-                    <TableHead className="min-w-[100px] text-right">Amount</TableHead>
-                    <TableHead className="min-w-[100px]">Status</TableHead>
-                    <TableHead className="min-w-[200px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockExpenses.map((expense) => (
-                    <TableRow key={expense.id} className="hover:bg-muted/50">
-                      <TableCell className="font-medium">{expense.employeeName}</TableCell>
-                      <TableCell className="max-w-[180px] truncate" title={expense.approvalSubject}>
-                        {expense.approvalSubject}
-                      </TableCell>
-                      <TableCell>{expense.date}</TableCell>
-                      <TableCell>{expense.category}</TableCell>
-                      <TableCell className="text-right font-medium">{expense.amount}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="bg-pending/10 text-pending">
-                          Pending
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleQuickApprove(expense.id)}
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                          >
-                            <CheckCircle className="mr-1 h-3 w-3" />
-                            Accept
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleQuickReject(expense.id)}
-                          >
-                            <XCircle className="mr-1 h-3 w-3" />
-                            Reject
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedExpense(expense)}
-                          >
-                            Review
-                          </Button>
-                        </div>
-                      </TableCell>
+            {pendingExpenses.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No pending expenses to review</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[120px]">Employee</TableHead>
+                      <TableHead className="min-w-[180px]">Description</TableHead>
+                      <TableHead className="min-w-[100px]">Date</TableHead>
+                      <TableHead className="min-w-[120px]">Category</TableHead>
+                      <TableHead className="min-w-[100px] text-right">Amount</TableHead>
+                      <TableHead className="min-w-[100px]">Status</TableHead>
+                      <TableHead className="min-w-[200px]">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {pendingExpenses.map((expense) => (
+                      <TableRow key={expense.id} className="hover:bg-muted/50">
+                        <TableCell className="font-medium">{expense.employee_name}</TableCell>
+                        <TableCell className="max-w-[180px] truncate" title={expense.description}>
+                          {expense.description}
+                        </TableCell>
+                        <TableCell>{expense.expense_date}</TableCell>
+                        <TableCell>{expense.category_display}</TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(expense.amount, expense.currency)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="bg-pending/10 text-pending">
+                            {expense.status_display}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleQuickApprove(expense.id)}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              <CheckCircle className="mr-1 h-3 w-3" />
+                              Accept
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleQuickReject(expense.id)}
+                            >
+                              <XCircle className="mr-1 h-3 w-3" />
+                              Reject
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleReviewExpense(expense)}
+                            >
+                              Review
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>
@@ -191,19 +254,21 @@ const ManagerDashboard = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-muted-foreground">Employee</Label>
-                    <p className="font-medium">{selectedExpense.employeeName}</p>
+                    <p className="font-medium">{selectedExpense.employee_name}</p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Date</Label>
-                    <p className="font-medium">{selectedExpense.date}</p>
+                    <p className="font-medium">{selectedExpense.expense_date}</p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Category</Label>
-                    <p className="font-medium">{selectedExpense.category}</p>
+                    <p className="font-medium">{selectedExpense.category_display}</p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Amount</Label>
-                    <p className="font-medium text-lg">{selectedExpense.amount}</p>
+                    <p className="font-medium text-lg">
+                      {formatCurrency(selectedExpense.amount, selectedExpense.currency)}
+                    </p>
                   </div>
                 </div>
                 <div>
@@ -229,14 +294,25 @@ const ManagerDashboard = () => {
               </div>
 
               <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setSelectedExpense(null)}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSelectedExpense(null)}
+                  disabled={actionLoading}
+                >
                   Cancel
                 </Button>
-                <Button variant="destructive" onClick={handleReject}>
+                <Button 
+                  variant="destructive" 
+                  onClick={handleReject}
+                  disabled={actionLoading}
+                >
                   <XCircle className="mr-2 h-4 w-4" />
                   Reject
                 </Button>
-                <Button onClick={handleApprove}>
+                <Button 
+                  onClick={handleApprove}
+                  disabled={actionLoading}
+                >
                   <CheckCircle className="mr-2 h-4 w-4" />
                   Approve
                 </Button>

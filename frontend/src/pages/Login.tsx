@@ -22,9 +22,10 @@ const Login = () => {
     try {
       await login(email, password);
       toast.success('Login successful!');
-      navigate('/dashboard');
-    } catch (error) {
-      toast.error('Login failed. Please check your credentials.');
+      // AuthContext will handle navigation
+    } catch (error: any) {
+      console.error('Login error:', error);
+      toast.error(error.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -33,7 +34,7 @@ const Login = () => {
   const handleTestLogin = (role: UserRole) => {
     testLogin(role);
     toast.success(`Logged in as ${role}`);
-    navigate(`/dashboard/${role}`);
+    navigate(`/dashboard/${role.toLowerCase()}`);
   };
 
   return (
@@ -46,9 +47,7 @@ const Login = () => {
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
             <div className="flex items-center justify-center mb-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-                <span className="text-xl font-bold text-primary-foreground">EM</span>
-              </div>
+              <img src="/logo.svg" alt="ExpenseTracker" className="h-16 w-auto" />
             </div>
             <CardTitle className="text-2xl text-center">Welcome back</CardTitle>
             <CardDescription className="text-center">
@@ -98,21 +97,21 @@ const Login = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleTestLogin('admin')}
+                  onClick={() => handleTestLogin('ADMIN')}
                 >
                   Login as Admin
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleTestLogin('manager')}
+                  onClick={() => handleTestLogin('MANAGER')}
                 >
                   Login as Manager
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleTestLogin('employee')}
+                  onClick={() => handleTestLogin('EMPLOYEE')}
                 >
                   Login as Employee
                 </Button>
