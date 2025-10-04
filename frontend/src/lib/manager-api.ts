@@ -1,5 +1,6 @@
 // API functions for manager operations
 import { apiRequest, API_BASE_URL } from './api';
+import { currencyService } from './currency';
 
 export const MANAGER_API_ENDPOINTS = {
   // Manager dashboard
@@ -71,15 +72,60 @@ export interface ExpenseApprovalAction {
   approval_notes?: string;
 }
 
+// Utility function to add currency conversion to manager expenses
+export const addCurrencyConversionToManagerExpenses = async (
+  expenses: ManagerExpense[], 
+  targetCurrency: string = 'USD'
+): Promise<(ManagerExpense & { convertedAmount?: number; conversionRate?: number })[]> => {
+  if (!expenses.length) return expenses;
+
+  try {
+    const conversionsPromise = expenses.map(async (expense) => {
+      if (expense.currency === targetCurrency) {
+        return { ...expense, convertedAmount: parseFloat(expense.amount), conversionRate: 1 };
+      }
+
+      try {
+        const result = await currencyService.convertCurrency(
+          parseFloat(expense.amount),
+          expense.currency,
+          targetCurrency
+        );
+        return {
+          ...expense,
+          convertedAmount: result.toAmount,
+          conversionRate: result.rate
+        };
+      } catch (error) {
+        console.warn(`Failed to convert ${expense.currency} to ${targetCurrency} for expense ${expense.id}`);
+        return expense;
+      }
+    });
+
+    return await Promise.all(conversionsPromise);
+  } catch (error) {
+    console.warn('Failed to add currency conversions to manager expenses:', error);
+    return expenses;
+  }
+};
+
 // Manager API functions
 export const managerAPI = {
-  // Get pending expenses for manager approval
-  getPendingExpenses: async (): Promise<ManagerExpense[]> => {
+  // Get pending expenses for manager approval with optional currency conversion
+  getPendingExpenses: async (convertToCurrency?: string): Promise<ManagerExpense[]> => {
     const response = await apiRequest(MANAGER_API_ENDPOINTS.PENDING_EXPENSES);
     if (!response.ok) {
       throw new Error('Failed to fetch pending expenses');
     }
-    return response.json();
+    
+    const expenses = await response.json();
+    
+    // Add currency conversion if requested
+    if (convertToCurrency) {
+      return addCurrencyConversionToManagerExpenses(expenses, convertToCurrency);
+    }
+    
+    return expenses;
   },
 
   // Get count of pending expenses (for notifications)

@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { CurrencySelect, CurrencyDisplay, CurrencyConverter } from '@/components/ui/currency-converter';
+import { currencyService } from '@/lib/currency';
 
 interface Country {
   name: {
@@ -26,6 +28,9 @@ const AdminDashboard = () => {
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [countries, setCountries] = useState<Country[]>([]);
   const [countriesLoading, setCountriesLoading] = useState(true);
+  const [baseCurrency, setBaseCurrency] = useState('USD'); // For currency conversion display
+  const [totalExpenses, setTotalExpenses] = useState(45231);
+  const [totalExpensesCurrency, setTotalExpensesCurrency] = useState('USD');
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -51,7 +56,25 @@ const AdminDashboard = () => {
   }, []);
 
   const stats = [
-    { title: 'Total Expenses', value: '$45,231', icon: DollarSign, color: 'text-primary' },
+    { 
+      title: 'Total Expenses', 
+      value: (
+        <div className="flex flex-col gap-1">
+          <CurrencyDisplay amount={totalExpenses} currency={totalExpensesCurrency} />
+          {totalExpensesCurrency !== baseCurrency && (
+            <CurrencyConverter
+              defaultAmount={totalExpenses}
+              defaultFromCurrency={totalExpensesCurrency}
+              defaultToCurrency={baseCurrency}
+              compact={true}
+              className="text-xs text-muted-foreground"
+            />
+          )}
+        </div>
+      ),
+      icon: DollarSign, 
+      color: 'text-primary' 
+    },
     { title: 'Pending Approvals', value: '12', icon: Clock, color: 'text-pending' },
     { title: 'Approved This Month', value: '87', icon: CheckCircle, color: 'text-approved' },
     { title: 'Total Users', value: '24', icon: Users, color: 'text-primary' },
@@ -83,7 +106,17 @@ const AdminDashboard = () => {
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
             <p className="text-muted-foreground mt-1">Manage your organization's expenses</p>
           </div>
-          <Dialog open={openAddUser} onOpenChange={setOpenAddUser}>
+          <div className="flex items-center gap-4">
+            {/* Base Currency Selector */}
+            <div className="flex flex-col items-end">
+              <Label className="text-xs text-muted-foreground mb-1">View amounts in:</Label>
+              <CurrencySelect
+                value={baseCurrency}
+                onValueChange={setBaseCurrency}
+                className="w-24"
+              />
+            </div>
+            <Dialog open={openAddUser} onOpenChange={setOpenAddUser}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
@@ -160,6 +193,7 @@ const AdminDashboard = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
       </motion.div>
 

@@ -18,6 +18,13 @@ export const API_ENDPOINTS = {
   USER_LIST: `${API_BASE_URL}/auth/users/`,
   COMPANY_STATS: `${API_BASE_URL}/auth/company/stats/`,
   
+  // Admin panel endpoints
+  ADMIN_USERS: `${API_BASE_URL}/admin/users/`,
+  ADMIN_WORKFLOWS: `${API_BASE_URL}/admin/workflows/`,
+  ADMIN_APPROVAL_RULES: `${API_BASE_URL}/admin/approval-rules/`,
+  ADMIN_DASHBOARD: `${API_BASE_URL}/admin/dashboard/`,
+  ADMIN_COMPANY: `${API_BASE_URL}/admin/company/`,
+  
   // Test endpoint
   TEST_AUTH: `${API_BASE_URL}/auth/test/`,
 };
@@ -299,5 +306,216 @@ export const adminAPI = {
     if (!response.ok) {
       throw new Error('Failed to delete user');
     }
+  },
+};
+
+// Admin Panel API functions
+export const adminPanelAPI = {
+  // User Management
+  getUsers: async () => {
+    const response = await apiRequest(API_ENDPOINTS.ADMIN_USERS);
+    if (!response.ok) {
+      throw new Error('Failed to get users');
+    }
+    return response.json();
+  },
+
+  createUser: async (userData: {
+    username: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    role: string;
+    country?: string;
+    manager_id?: number;
+    password: string;
+    password_confirm: string;
+  }) => {
+    const response = await apiRequest(API_ENDPOINTS.ADMIN_USERS, {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to create user');
+    }
+    return response.json();
+  },
+
+  updateUser: async (userId: string, userData: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    role?: string;
+    country?: string;
+    manager_id?: number;
+    is_active_user?: boolean;
+  }) => {
+    const response = await apiRequest(`${API_ENDPOINTS.ADMIN_USERS}${userId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to update user');
+    }
+    return response.json();
+  },
+
+  deleteUser: async (userId: string) => {
+    const response = await apiRequest(`${API_ENDPOINTS.ADMIN_USERS}${userId}/`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete user');
+    }
+  },
+
+  getManagers: async () => {
+    const response = await apiRequest(`${API_ENDPOINTS.ADMIN_USERS}managers/`);
+    if (!response.ok) {
+      throw new Error('Failed to get managers');
+    }
+    return response.json();
+  },
+
+  // Approval Workflows
+  getWorkflows: async () => {
+    const response = await apiRequest(API_ENDPOINTS.ADMIN_WORKFLOWS);
+    if (!response.ok) {
+      throw new Error('Failed to get workflows');
+    }
+    return response.json();
+  },
+
+  createWorkflow: async (workflowData: {
+    name: string;
+    workflow_type: string;
+    description?: string;
+    is_active?: boolean;
+    minimum_approval_percentage?: number;
+    manager_approval_required?: boolean;
+    approval_steps?: Array<{
+      step_number: number;
+      approver_role: string;
+      approver?: string;
+      is_required: boolean;
+    }>;
+    conditional_rules?: Array<{
+      rule_type: string;
+      percentage_threshold?: number;
+      amount_threshold?: number;
+      specific_approver?: string;
+      condition_description?: string;
+      is_active: boolean;
+    }>;
+  }) => {
+    const response = await apiRequest(API_ENDPOINTS.ADMIN_WORKFLOWS, {
+      method: 'POST',
+      body: JSON.stringify(workflowData),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to create workflow');
+    }
+    return response.json();
+  },
+
+  updateWorkflow: async (workflowId: string, workflowData: any) => {
+    const response = await apiRequest(`${API_ENDPOINTS.ADMIN_WORKFLOWS}${workflowId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(workflowData),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to update workflow');
+    }
+    return response.json();
+  },
+
+  deleteWorkflow: async (workflowId: string) => {
+    const response = await apiRequest(`${API_ENDPOINTS.ADMIN_WORKFLOWS}${workflowId}/`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete workflow');
+    }
+  },
+
+  // User Approval Rules
+  getApprovalRules: async () => {
+    const response = await apiRequest(API_ENDPOINTS.ADMIN_APPROVAL_RULES);
+    if (!response.ok) {
+      throw new Error('Failed to get approval rules');
+    }
+    return response.json();
+  },
+
+  createApprovalRule: async (ruleData: {
+    user: string;
+    workflow: string;
+    description: string;
+    is_active?: boolean;
+  }) => {
+    const response = await apiRequest(API_ENDPOINTS.ADMIN_APPROVAL_RULES, {
+      method: 'POST',
+      body: JSON.stringify(ruleData),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to create approval rule');
+    }
+    return response.json();
+  },
+
+  updateApprovalRule: async (ruleId: string, ruleData: any) => {
+    const response = await apiRequest(`${API_ENDPOINTS.ADMIN_APPROVAL_RULES}${ruleId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(ruleData),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to update approval rule');
+    }
+    return response.json();
+  },
+
+  deleteApprovalRule: async (ruleId: string) => {
+    const response = await apiRequest(`${API_ENDPOINTS.ADMIN_APPROVAL_RULES}${ruleId}/`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete approval rule');
+    }
+  },
+
+  // Dashboard
+  getDashboardStats: async () => {
+    const response = await apiRequest(API_ENDPOINTS.ADMIN_DASHBOARD);
+    if (!response.ok) {
+      throw new Error('Failed to get dashboard stats');
+    }
+    return response.json();
+  },
+
+  // Company
+  getCompany: async () => {
+    const response = await apiRequest(API_ENDPOINTS.ADMIN_COMPANY);
+    if (!response.ok) {
+      throw new Error('Failed to get company data');
+    }
+    return response.json();
+  },
+
+  updateCompany: async (companyData: {
+    name?: string;
+    default_currency?: string;
+    country?: string;
+  }) => {
+    const response = await apiRequest(API_ENDPOINTS.ADMIN_COMPANY, {
+      method: 'PATCH',
+      body: JSON.stringify(companyData),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to update company');
+    }
+    return response.json();
   },
 };

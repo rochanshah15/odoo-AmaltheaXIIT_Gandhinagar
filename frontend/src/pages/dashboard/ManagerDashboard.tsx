@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { WorkflowStepper, WorkflowStep } from '@/components/WorkflowStepper';
 import { toast } from 'sonner';
 import { managerAPI, ManagerExpense, ManagerExpenseDetail } from '@/lib/manager-api';
+import { CurrencySelect, CurrencyDisplay, CurrencyConverter } from '@/components/ui/currency-converter';
 
 const ManagerDashboard = () => {
   const [selectedExpense, setSelectedExpense] = useState<ManagerExpenseDetail | null>(null);
@@ -18,6 +19,7 @@ const ManagerDashboard = () => {
   const [pendingExpenses, setPendingExpenses] = useState<ManagerExpense[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [baseCurrency, setBaseCurrency] = useState('USD'); // For currency conversion display
 
   // Fetch pending expenses on component mount
   useEffect(() => {
@@ -120,13 +122,7 @@ const ManagerDashboard = () => {
   };
 
   const formatCurrency = (amount: string, currency: string) => {
-    const currencySymbols: { [key: string]: string } = {
-      'USD': '$',
-      'EUR': '€',
-      'GBP': '£',
-      'INR': '₹'
-    };
-    return `${currencySymbols[currency] || currency} ${amount}`;
+    return <CurrencyDisplay amount={parseFloat(amount)} currency={currency} />;
   };
 
   const workflowSteps: WorkflowStep[] = [
@@ -153,9 +149,19 @@ const ManagerDashboard = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <div>
-          <h1 className="text-3xl font-bold">Manager Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Review and approve expense requests</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Manager Dashboard</h1>
+            <p className="text-muted-foreground mt-1">Review and approve expense requests</p>
+          </div>
+          <div className="flex flex-col items-end">
+            <Label className="text-xs text-muted-foreground mb-1">View amounts in:</Label>
+            <CurrencySelect
+              value={baseCurrency}
+              onValueChange={setBaseCurrency}
+              className="w-24"
+            />
+          </div>
         </div>
       </motion.div>
 
@@ -195,7 +201,18 @@ const ManagerDashboard = () => {
                         <TableCell>{expense.expense_date}</TableCell>
                         <TableCell>{expense.category_display}</TableCell>
                         <TableCell className="text-right font-medium">
-                          {formatCurrency(expense.amount, expense.currency)}
+                          <div className="flex flex-col items-end gap-1">
+                            <CurrencyDisplay amount={parseFloat(expense.amount)} currency={expense.currency} />
+                            {expense.currency !== baseCurrency && (
+                              <CurrencyConverter
+                                defaultAmount={parseFloat(expense.amount)}
+                                defaultFromCurrency={expense.currency}
+                                defaultToCurrency={baseCurrency}
+                                compact={true}
+                                className="text-xs text-muted-foreground"
+                              />
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary" className="bg-pending/10 text-pending">
@@ -266,9 +283,18 @@ const ManagerDashboard = () => {
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Amount</Label>
-                    <p className="font-medium text-lg">
-                      {formatCurrency(selectedExpense.amount, selectedExpense.currency)}
-                    </p>
+                    <div className="flex flex-col gap-1">
+                      <CurrencyDisplay amount={parseFloat(selectedExpense.amount)} currency={selectedExpense.currency} className="font-medium text-lg" />
+                      {selectedExpense.currency !== baseCurrency && (
+                        <CurrencyConverter
+                          defaultAmount={parseFloat(selectedExpense.amount)}
+                          defaultFromCurrency={selectedExpense.currency}
+                          defaultToCurrency={baseCurrency}
+                          compact={true}
+                          className="text-sm text-muted-foreground"
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div>

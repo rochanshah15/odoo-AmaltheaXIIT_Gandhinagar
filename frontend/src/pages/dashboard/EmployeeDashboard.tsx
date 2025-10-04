@@ -12,6 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { expenseAPI, type Expense, type ExpenseCreate, type Category } from '@/lib/expense-api';
+import { CurrencySelect, CurrencyDisplay, CurrencyConverter } from '@/components/ui/currency-converter';
+import { currencyService } from '@/lib/currency';
 
 const EmployeeDashboard = () => {
   const [openSubmit, setOpenSubmit] = useState(false);
@@ -27,6 +29,9 @@ const EmployeeDashboard = () => {
   ]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [conversionLoading, setConversionLoading] = useState(false);
+  const [convertedAmount, setConvertedAmount] = useState<number | null>(null);
+  const [baseCurrency, setBaseCurrency] = useState('USD'); // For currency conversion display
   
   // Form state
   const [formData, setFormData] = useState<ExpenseCreate>({
@@ -71,6 +76,32 @@ const EmployeeDashboard = () => {
       ...prev,
       [field]: value,
     }));
+
+    // If amount or currency changes, update the currency conversion
+    if (field === 'amount' || field === 'currency') {
+      updateConversion(
+        field === 'amount' ? Number(value) : formData.amount,
+        field === 'currency' ? String(value) : formData.currency
+      );
+    }
+  };
+
+  const updateConversion = async (amount: number, fromCurrency: string) => {
+    if (amount <= 0 || !fromCurrency || fromCurrency === baseCurrency) {
+      setConvertedAmount(null);
+      return;
+    }
+
+    try {
+      setConversionLoading(true);
+      const converted = await currencyService.convertCurrency(amount, fromCurrency, baseCurrency);
+      setConvertedAmount(converted.toAmount);
+    } catch (error) {
+      console.error('Currency conversion failed:', error);
+      setConvertedAmount(null);
+    } finally {
+      setConversionLoading(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,6 +120,7 @@ const EmployeeDashboard = () => {
       expense_date: '',
     });
     setReceipt(null);
+    setConvertedAmount(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -150,14 +182,8 @@ const EmployeeDashboard = () => {
   };
 
   const formatAmount = (amount: string, currency: string) => {
-    const currencySymbols: Record<string, string> = {
-      USD: '$',
-      EUR: '€',
-      GBP: '£',
-    };
-    
-    const symbol = currencySymbols[currency] || currency;
-    return `${symbol}${parseFloat(amount).toFixed(2)}`;
+    // Use the CurrencyDisplay component's formatting logic
+    return <CurrencyDisplay amount={parseFloat(amount)} currency={currency} />;
   };
 
   const formatDate = (dateString: string) => {
@@ -189,15 +215,25 @@ const EmployeeDashboard = () => {
             <h1 className="text-3xl font-bold">Employee Dashboard</h1>
             <p className="text-muted-foreground mt-1">Submit and track your expenses</p>
           </div>
-          <Dialog open={openSubmit} onOpenChange={setOpenSubmit}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Submit Expense
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
+          <div className="flex items-center gap-4">
+            {/* Base Currency Selector */}
+            <div className="flex flex-col items-end">
+              <Label className="text-xs text-muted-foreground mb-1">View amounts in:</Label>
+              <CurrencySelect
+                value={baseCurrency}
+                onValueChange={setBaseCurrency}
+                className="w-24"
+              />
+            </div>
+            <Dialog open={openSubmit} onOpenChange={setOpenSubmit}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Submit Expense
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
                 <DialogTitle>Submit New Expense</DialogTitle>
                 <DialogDescription>
                   Fill in the details of your expense claim
@@ -219,22 +255,30 @@ const EmployeeDashboard = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="currency">Currency</Label>
-                    <Select 
-                      value={formData.currency} 
+                    <CurrencySelect
+                      value={formData.currency}
                       onValueChange={(value) => handleInputChange('currency', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select currency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD ($)</SelectItem>
-                        <SelectItem value="EUR">EUR (€)</SelectItem>
-                        <SelectItem value="GBP">GBP (£)</SelectItem>
-                        <SelectItem value="INR">INR (₹)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    />
                   </div>
                 </div>
+
+                {/* Currency Conversion Display */}
+                {convertedAmount !== null && formData.currency !== baseCurrency && (
+                  <div className="bg-muted/50 p-3 rounded-lg border">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Converted to {baseCurrency}:
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {conversionLoading ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <CurrencyDisplay amount={convertedAmount} currency={baseCurrency} />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -326,6 +370,7 @@ const EmployeeDashboard = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
       </motion.div>
 
@@ -380,7 +425,18 @@ const EmployeeDashboard = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          {formatAmount(expense.amount, expense.currency)}
+                          <div className="flex flex-col items-end gap-1">
+                            <CurrencyDisplay amount={parseFloat(expense.amount)} currency={expense.currency} />
+                            {expense.currency !== baseCurrency && (
+                              <CurrencyConverter
+                                defaultAmount={parseFloat(expense.amount)}
+                                defaultFromCurrency={expense.currency}
+                                defaultToCurrency={baseCurrency}
+                                compact={true}
+                                className="text-xs text-muted-foreground"
+                              />
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge 

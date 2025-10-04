@@ -1,5 +1,6 @@
 // API functions for expense management
 import { apiRequest, API_BASE_URL } from './api';
+import { currencyService } from './currency';
 
 export const EXPENSE_API_ENDPOINTS = {
   // Expense CRUD
@@ -91,15 +92,60 @@ export interface Category {
   label: string;
 }
 
+// Utility function to add currency conversion to expenses
+export const addCurrencyConversion = async (
+  expenses: Expense[], 
+  targetCurrency: string = 'USD'
+): Promise<(Expense & { convertedAmount?: number; conversionRate?: number })[]> => {
+  if (!expenses.length) return expenses;
+
+  try {
+    const conversionsPromise = expenses.map(async (expense) => {
+      if (expense.currency === targetCurrency) {
+        return { ...expense, convertedAmount: parseFloat(expense.amount), conversionRate: 1 };
+      }
+
+      try {
+        const result = await currencyService.convertCurrency(
+          parseFloat(expense.amount),
+          expense.currency,
+          targetCurrency
+        );
+        return {
+          ...expense,
+          convertedAmount: result.toAmount,
+          conversionRate: result.rate
+        };
+      } catch (error) {
+        console.warn(`Failed to convert ${expense.currency} to ${targetCurrency} for expense ${expense.id}`);
+        return expense;
+      }
+    });
+
+    return await Promise.all(conversionsPromise);
+  } catch (error) {
+    console.warn('Failed to add currency conversions to expenses:', error);
+    return expenses;
+  }
+};
+
 // Expense API functions
 export const expenseAPI = {
-  // Get all expenses for current user
-  getExpenses: async (): Promise<Expense[]> => {
+  // Get all expenses for current user with optional currency conversion
+  getExpenses: async (convertToCurrency?: string): Promise<Expense[]> => {
     const response = await apiRequest(EXPENSE_API_ENDPOINTS.EXPENSES);
     if (!response.ok) {
       throw new Error('Failed to fetch expenses');
     }
-    return response.json();
+    
+    const expenses = await response.json();
+    
+    // Add currency conversion if requested
+    if (convertToCurrency) {
+      return addCurrencyConversion(expenses, convertToCurrency);
+    }
+    
+    return expenses;
   },
 
   // Create a new expense
@@ -236,13 +282,18 @@ export const expenseAPI = {
     return response.json();
   },
 
-  // Get expense summary for dashboard
-  getExpenseSummary: async (): Promise<ExpenseSummary> => {
+  // Get expense summary for dashboard with optional currency conversion
+  getExpenseSummary: async (convertToCurrency?: string): Promise<ExpenseSummary> => {
     const response = await apiRequest(EXPENSE_API_ENDPOINTS.EXPENSE_SUMMARY);
     if (!response.ok) {
       throw new Error('Failed to fetch expense summary');
     }
-    return response.json();
+    
+    const summary = await response.json();
+    
+    // Note: Summary amounts are already aggregated, so conversion would need to be done on the backend
+    // For now, we'll return the summary as-is and let the frontend handle display conversion
+    return summary;
   },
 
   // Get available categories
